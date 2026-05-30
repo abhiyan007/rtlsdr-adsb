@@ -1,37 +1,35 @@
 # rtlsdr-adsb
 
-Picks up ADS-B signals from aircraft using a cheap RTL-SDR dongle. Every commercial plane broadcasts its position, altitude, speed, and callsign unencrypted on 1090 MHz. You just listen.
-
-## hardware
-
-- RTL-SDR Blog v3 dongle (~$25)
-- Included telescoping antenna, pointed up
-
-## how it works
-
-`dump1090` does the actual radio decoding and runs a local server. `logger.py` connects to that server, parses the aircraft messages, and logs everything it sees.
+ADS-B aircraft tracking with an RTL-SDR dongle. Decodes position using CPR (Compact Position Reporting), tracks squawk codes, detects emergency transponder codes.
 
 ## setup
 
-Install dump1090:
 ```bash
 sudo apt install dump1090-mutability
-dump1090 --interactive --net
+dump1090 --net --quiet
 ```
 
-Then run the logger:
 ```bash
-python logger.py
+pip install pyModeS
+python tracker.py
+python tracker.py --host 192.168.1.x --port 30003
 ```
 
-Pass `--host` and `--port` if dump1090 is on a different machine.
+`decoder.py` has the raw message parsing and CPR math if you want to use it standalone.
 
-## output
+## what it does
+
+connects to dump1090's BaseStation output (port 30003), decodes each message type, resolves CPR position pairs into lat/lon, flags emergency squawks.
 
 ```
 listening on localhost:30003
 
-14:22:01  NEW   A3B1C2   UAL2183    35000ft   (41.88, -87.63)
-14:22:04  NEW   C0D4E5   DAL445     28500ft   (42.01, -87.90)
-14:22:09  UPD   A3B1C2   UAL2183    35000ft   (41.92, -87.51)
+14:23:01  NEW   A1B2C3  UAL2183     35000ft  412kts  (41.8781, -87.6298)
+14:23:04  NEW   D4E5F6  DAL0091     28500ft  380kts  (42.0121, -87.9034)
+14:23:07  UPD   A1B2C3  UAL2183     35000ft  412kts  (41.8820, -87.6101)
+14:24:11  !!!   B0C1D2  unknown     12000ft           SQUAWK 7700 (EMERGENCY)
 ```
+
+## hardware
+
+RTL-SDR Blog v3, stock telescoping antenna aimed up. Getting 150-200nm range on clear days.
